@@ -57,13 +57,13 @@ function formatCurrency(amount) {
 
 function SectionHeader({ number, title, subtitle }) {
   return (
-    <div className="flex items-start gap-4 mb-6">
-      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-tricolore-bleu to-marine-700 flex items-center justify-center text-white font-display font-bold text-lg shrink-0">
+    <div className="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-6">
+      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-tricolore-bleu to-marine-700 flex items-center justify-center text-white font-display font-bold text-sm sm:text-lg shrink-0">
         {number}
       </div>
       <div>
         <h2 className="section-title">{title}</h2>
-        {subtitle && <p className="text-marine-500 text-sm mt-1">{subtitle}</p>}
+        {subtitle && <p className="text-marine-500 text-xs sm:text-sm mt-1">{subtitle}</p>}
       </div>
     </div>
   )
@@ -84,8 +84,9 @@ function InvoiceLine({ line, index, onChange, onRemove, canRemove, isExempt }) {
   const lineTotal = line.quantity * line.unitPrice
 
   return (
-    <div className="grid grid-cols-12 gap-3 items-end p-4 bg-marine-50/50 rounded-xl border border-marine-100 animate-fade-in">
-      <div className={`col-span-12 ${isExempt ? 'sm:col-span-5' : 'sm:col-span-4'}`}>
+    <div className="p-4 bg-marine-50/50 rounded-xl border border-marine-100 animate-fade-in space-y-3">
+      {/* Description - full width */}
+      <div>
         <label className="input-label">Description</label>
         <input
           type="text"
@@ -95,49 +96,55 @@ function InvoiceLine({ line, index, onChange, onRemove, canRemove, isExempt }) {
           onChange={e => onChange(index, 'description', e.target.value)}
         />
       </div>
-      <div className="col-span-4 sm:col-span-2">
-        <label className="input-label">Quantité</label>
-        <input
-          type="number"
-          className="input-field text-center font-mono"
-          min="0.01"
-          step="0.01"
-          value={line.quantity}
-          onChange={e => onChange(index, 'quantity', parseFloat(e.target.value) || 0)}
-        />
-      </div>
-      <div className="col-span-4 sm:col-span-2">
-        <label className="input-label">Prix unitaire</label>
-        <input
-          type="number"
-          className="input-field text-right font-mono"
-          min="0"
-          step="0.01"
-          value={line.unitPrice}
-          onChange={e => onChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-        />
-      </div>
-      {!isExempt && (
-        <div className="col-span-4 sm:col-span-2">
-          <label className="input-label">TVA</label>
-          <select
-            className="input-field"
-            value={line.vatRegime}
-            onChange={e => onChange(index, 'vatRegime', e.target.value)}
-          >
-            {VAT_REGIMES.map(regime => (
-              <option key={regime.id} value={regime.id}>{regime.label}</option>
-            ))}
-          </select>
+
+      {/* Quantity, Price, TVA, Total - responsive grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div>
+          <label className="input-label">Quantité</label>
+          <input
+            type="number"
+            className="input-field text-center font-mono"
+            min="0.01"
+            step="0.01"
+            value={line.quantity}
+            onChange={e => onChange(index, 'quantity', parseFloat(e.target.value) || 0)}
+          />
         </div>
-      )}
-      <div className="col-span-10 sm:col-span-2 text-right">
-        <label className="input-label">Total</label>
-        <div className="py-3 font-mono font-semibold text-marine-900">
-          {formatCurrency(lineTotal)}
+        <div>
+          <label className="input-label">Prix unitaire</label>
+          <input
+            type="number"
+            className="input-field text-right font-mono"
+            min="0"
+            step="0.01"
+            value={line.unitPrice}
+            onChange={e => onChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+          />
+        </div>
+        {!isExempt && (
+          <div>
+            <label className="input-label">TVA</label>
+            <select
+              className="input-field"
+              value={line.vatRegime}
+              onChange={e => onChange(index, 'vatRegime', e.target.value)}
+            >
+              {VAT_REGIMES.map(regime => (
+                <option key={regime.id} value={regime.id}>{regime.label}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        <div className={isExempt ? 'col-span-2 sm:col-span-1' : ''}>
+          <label className="input-label">Total</label>
+          <div className="py-3 font-mono font-semibold text-marine-900 text-right sm:text-left">
+            {formatCurrency(lineTotal)}
+          </div>
         </div>
       </div>
-      <div className="col-span-2 sm:col-span-1 flex justify-end">
+
+      {/* Delete button - bottom right on mobile */}
+      <div className="flex justify-end pt-1">
         <button
           type="button"
           onClick={() => onRemove(index)}
@@ -420,39 +427,41 @@ export default function InvoiceForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-5xl mx-auto px-6">
-      <div className="space-y-8">
+    <form onSubmit={handleSubmit} className="max-w-5xl mx-auto px-4 sm:px-6">
+      <div className="space-y-6 sm:space-y-8">
 
         {/* Demo Data Banner */}
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-4 opacity-0 animate-fade-up">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-              <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 opacity-0 animate-fade-up">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-medium text-amber-900">Mode démonstration</p>
+                <p className="text-sm text-amber-700">Remplissez avec des données d'exemple</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={fillDemoData}
+              className="w-full sm:w-auto shrink-0 px-5 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
-            </div>
-            <div>
-              <p className="font-medium text-amber-900">Mode démonstration</p>
-              <p className="text-sm text-amber-700">Remplissez le formulaire avec des données d'exemple en un clic</p>
-            </div>
+              Données démo
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={fillDemoData}
-            className="shrink-0 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
-            Remplir avec des données démo
-          </button>
         </div>
 
         {/* Invoice Info */}
-        <section className="card p-8 opacity-0 animate-fade-up stagger-1">
+        <section className="card p-4 sm:p-8 opacity-0 animate-fade-up stagger-1">
           <SectionHeader number="1" title="Informations de la facture" />
 
-          <div className="grid sm:grid-cols-3 gap-4 mb-6">
+          <div className="grid sm:grid-cols-[repeat(3,minmax(0,1fr))] gap-4 mb-6">
             <InputField
               label="Numéro de facture"
               type="text"
@@ -464,6 +473,7 @@ export default function InvoiceForm() {
             <InputField
               label="Date d'émission"
               type="date"
+              className="w-full min-w-0"
               value={invoiceDate}
               onChange={e => setInvoiceDate(e.target.value)}
               error={errors.invoiceDate}
@@ -471,6 +481,7 @@ export default function InvoiceForm() {
             <InputField
               label="Date d'échéance"
               type="date"
+              className="w-full min-w-0"
               value={dueDate}
               onChange={e => setDueDate(e.target.value)}
             />
@@ -484,15 +495,14 @@ export default function InvoiceForm() {
               </svg>
               Régime de TVA
             </label>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
               {VAT_EXEMPTIONS.map(exemption => (
                 <label
                   key={exemption.id}
-                  className={`relative flex flex-col p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                    vatExemption === exemption.id
-                      ? 'border-tricolore-bleu bg-tricolore-bleu/5'
-                      : 'border-marine-200 hover:border-marine-300 bg-white'
-                  }`}
+                  className={`relative flex flex-col p-3 sm:p-4 rounded-lg border-2 cursor-pointer transition-all ${vatExemption === exemption.id
+                    ? 'border-tricolore-bleu bg-tricolore-bleu/5'
+                    : 'border-marine-200 hover:border-marine-300 bg-white'
+                    }`}
                 >
                   <input
                     type="radio"
@@ -502,17 +512,16 @@ export default function InvoiceForm() {
                     onChange={() => handleVatExemptionChange(exemption.id)}
                     className="sr-only"
                   />
-                  <span className={`font-medium text-sm ${
-                    vatExemption === exemption.id ? 'text-tricolore-bleu' : 'text-marine-900'
-                  }`}>
+                  <span className={`font-medium text-xs sm:text-sm ${vatExemption === exemption.id ? 'text-tricolore-bleu' : 'text-marine-900'
+                    }`}>
                     {exemption.label}
                   </span>
-                  <span className="text-xs text-marine-500 mt-1">
+                  <span className="text-xs text-marine-500 mt-1 hidden sm:block">
                     {exemption.description}
                   </span>
                   {vatExemption === exemption.id && (
-                    <div className="absolute top-2 right-2">
-                      <svg className="w-5 h-5 text-tricolore-bleu" fill="currentColor" viewBox="0 0 20 20">
+                    <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-tricolore-bleu" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
                     </div>
@@ -534,7 +543,7 @@ export default function InvoiceForm() {
         {/* Seller & Buyer */}
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Seller */}
-          <section className="card p-8 opacity-0 animate-fade-up stagger-2">
+          <section className="card p-4 sm:p-8 opacity-0 animate-fade-up stagger-2">
             <SectionHeader number="2" title="Vendeur" subtitle="Vos informations" />
 
             <div className="space-y-4">
@@ -556,7 +565,7 @@ export default function InvoiceForm() {
                   error={errors.sellerSiret}
                 />
                 <InputField
-                  label="N° TVA intracommunautaire"
+                  label="N° TVA"
                   type="text"
                   placeholder="FR12345678901"
                   value={seller.vatNumber}
@@ -599,7 +608,7 @@ export default function InvoiceForm() {
           </section>
 
           {/* Buyer */}
-          <section className="card p-8 opacity-0 animate-fade-up stagger-3">
+          <section className="card p-4 sm:p-8 opacity-0 animate-fade-up stagger-3">
             <SectionHeader number="3" title="Client" subtitle="Destinataire de la facture" />
 
             <div className="space-y-4">
@@ -655,7 +664,7 @@ export default function InvoiceForm() {
         </div>
 
         {/* Invoice Lines */}
-        <section className="card p-8 opacity-0 animate-fade-up stagger-4">
+        <section className="card p-4 sm:p-8 opacity-0 animate-fade-up stagger-4">
           <SectionHeader number="4" title="Lignes de facturation" subtitle="Produits ou services facturés" />
 
           {errors.lines && (
@@ -692,7 +701,7 @@ export default function InvoiceForm() {
 
         {/* Payment & Totals */}
         <div className="grid lg:grid-cols-3 gap-8">
-          <section className="lg:col-span-2 card p-8 opacity-0 animate-fade-up stagger-5">
+          <section className="lg:col-span-2 card p-4 sm:p-8 opacity-0 animate-fade-up stagger-5">
             <SectionHeader number="5" title="Paiement" subtitle="Coordonnées bancaires" />
 
             <div className="grid sm:grid-cols-2 gap-4">
