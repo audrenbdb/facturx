@@ -259,7 +259,7 @@ const demoData = {
     },
   ],
   iban: 'FR76 3000 6000 0112 3456 7890 189',
-  note: 'Paiement à 30 jours par virement bancaire. En cas de retard, des pénalités seront appliquées conformément à la loi.',
+  note: 'Paiement à 30 jours par virement bancaire.',
 }
 
 export default function InvoiceForm() {
