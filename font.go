@@ -48,6 +48,15 @@ func (m *fontMetrics) charWidth(c rune) uint16 {
 	return m.defaultWidth
 }
 
+// stringWidth calculates the width of a string at the given font size in points.
+func (m *fontMetrics) stringWidth(s string, fontSize float64) float64 {
+	var totalWidth uint32
+	for _, c := range s {
+		totalWidth += uint32(m.charWidth(c))
+	}
+	return float64(totalWidth) * fontSize / float64(m.unitsPerEM)
+}
+
 // ============================================================================
 // TTF Parser Implementation
 // ============================================================================

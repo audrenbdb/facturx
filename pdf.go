@@ -411,10 +411,15 @@ func generatePageContent(req *InvoiceRequest, lineTotal, taxTotal, grandTotal, v
 	// Date badge
 	// ========================================================================
 	dateStr := fmt.Sprintf("%s/%s/%s", req.Date[6:8], req.Date[4:6], req.Date[0:4])
-	dateX := pageWidth - margin - 80
+	dateFontSize := 10.0
+	dateBoxWidth := 75.0
+	dateBoxX := pageWidth - margin - 80
 	fmt.Fprintf(&content, "1 1 1 rg\n") // White background
-	fmt.Fprintf(&content, "%.2f %.2f 75 20 re f\n", dateX-5, pageHeight-50)
-	writeTextColored(&content, dateStr, dateX, pageHeight-44, 10.0, primaryR, primaryG, primaryB)
+	fmt.Fprintf(&content, "%.2f %.2f %.2f 20 re f\n", dateBoxX, pageHeight-50, dateBoxWidth)
+	// Center text in box
+	dateTextWidth := metrics.stringWidth(dateStr, dateFontSize)
+	dateTextX := dateBoxX + (dateBoxWidth-dateTextWidth)/2
+	writeTextColored(&content, dateStr, dateTextX, pageHeight-44, dateFontSize, primaryR, primaryG, primaryB)
 
 	// ========================================================================
 	// Accent line under header
