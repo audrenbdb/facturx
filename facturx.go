@@ -217,6 +217,9 @@ func validateContact(c *Contact, prefix string) error {
 			return ValidationError{Field: prefix + ".Siret", Message: "SIRET must contain only digits"}
 		}
 	}
+	if !validateSiretLuhn(c.Siret) {
+		return ValidationError{Field: prefix + ".Siret", Message: "SIRET checksum invalid (Luhn)"}
+	}
 
 	// Country code: 2 letters
 	if len(c.CountryCode) != 2 {
@@ -229,6 +232,24 @@ func validateContact(c *Contact, prefix string) error {
 	}
 
 	return nil
+}
+
+// validateSiretLuhn validates a 14-digit SIRET using the Luhn algorithm.
+// Assumes the input has already been validated as 14 numeric digits.
+func validateSiretLuhn(siret string) bool {
+	sum := 0
+	for i := 0; i < 14; i++ {
+		digit := int(siret[i] - '0')
+		// Double every second digit (0-indexed: positions 1, 3, 5, 7, 9, 11, 13)
+		if i%2 == 1 {
+			digit *= 2
+			if digit > 9 {
+				digit -= 9
+			}
+		}
+		sum += digit
+	}
+	return sum%10 == 0
 }
 
 func parseInt(s string) int {

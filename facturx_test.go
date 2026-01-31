@@ -16,7 +16,7 @@ func sampleRequest() InvoiceRequest {
 			ZipCode:     "75001",
 			City:        "Paris",
 			CountryCode: "FR",
-			Siret:       "12345678901234",
+			Siret:       "12345678900006", // Valid Luhn checksum
 			VatNumber:   "FR12345678901",
 		},
 		Buyer: Contact{
@@ -25,7 +25,7 @@ func sampleRequest() InvoiceRequest {
 			ZipCode:     "69001",
 			City:        "Lyon",
 			CountryCode: "FR",
-			Siret:       "98765432109876",
+			Siret:       "98765432100006", // Valid Luhn checksum
 			VatNumber:   "FR98765432109",
 		},
 		Lines: []InvoiceLine{
@@ -89,6 +89,42 @@ func TestValidationInvalidSiret(t *testing.T) {
 	_, err := Generate(req)
 	if err == nil {
 		t.Error("Expected validation error for invalid SIRET")
+	}
+}
+
+func TestValidationInvalidSiretLuhn(t *testing.T) {
+	req := sampleRequest()
+	req.Seller.Siret = "12345678901234" // 14 digits but invalid Luhn checksum
+	_, err := Generate(req)
+	if err == nil {
+		t.Error("Expected validation error for invalid SIRET checksum")
+	}
+	ve, ok := err.(ValidationError)
+	if !ok {
+		t.Errorf("Expected ValidationError, got %T", err)
+	}
+	if ve.Field != "Seller.Siret" {
+		t.Errorf("Expected field Seller.Siret, got %s", ve.Field)
+	}
+}
+
+func TestSiretLuhnValidation(t *testing.T) {
+	tests := []struct {
+		siret string
+		valid bool
+	}{
+		{"12345678900006", true},  // Valid checksum
+		{"98765432100006", true},  // Valid checksum
+		{"00000000000000", true},  // All zeros is valid
+		{"12345678901234", false}, // Invalid checksum
+		{"11111111111111", false}, // Invalid checksum
+	}
+
+	for _, tt := range tests {
+		result := validateSiretLuhn(tt.siret)
+		if result != tt.valid {
+			t.Errorf("validateSiretLuhn(%s) = %v, want %v", tt.siret, result, tt.valid)
+		}
 	}
 }
 
