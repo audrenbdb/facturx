@@ -223,8 +223,8 @@ const demoData = {
   invoiceNumber: `FAC-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 999) + 1).padStart(3, '0')}`,
   seller: {
     name: 'TechConsult SARL',
-    siret: '123 456 789 00006', // Valid Luhn checksum
-    vatNumber: 'FR12345678900',
+    siret: '528 250 004 00033', // Valid Luhn checksum
+    vatNumber: 'FR32528250004',
     street: '42 Boulevard Haussmann',
     postalCode: '75009',
     city: 'Paris',
@@ -232,7 +232,7 @@ const demoData = {
   },
   buyer: {
     name: 'Dupont Industries SA',
-    siret: '987 654 321 00006', // Valid Luhn checksum
+    siret: '356 000 000 00048', // La Poste - valid Luhn checksum
     street: '15 Rue de la République',
     postalCode: '69002',
     city: 'Lyon',
