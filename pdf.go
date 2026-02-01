@@ -485,19 +485,43 @@ func generatePageContent(req *InvoiceRequest, lineTotal, taxTotal, grandTotal, v
 	// Table - adjust position based on seller block height
 	// ========================================================================
 	tableTop := pageHeight - 230.0 - float64(sellerExtraLines)*11.0
-	colDate := margin
-	colDesc := margin + 65.0
-	colQty := margin + 295.0
-	colPrice := margin + 355.0
-	colTotal := margin + 440.0
 	rowHeight := 22.0
+
+	// Check if any line has a date
+	hasAnyDate := false
+	for _, line := range req.Lines {
+		if line.Date != "" {
+			hasAnyDate = true
+			break
+		}
+	}
+
+	// Column positions depend on whether we show the Date column
+	var colDate, colDesc, colQty, colPrice, colTotal float64
+	var descMaxLen int
+	if hasAnyDate {
+		colDate = margin
+		colDesc = margin + 65.0
+		colQty = margin + 295.0
+		colPrice = margin + 355.0
+		colTotal = margin + 440.0
+		descMaxLen = 35
+	} else {
+		colDesc = margin
+		colQty = margin + 295.0
+		colPrice = margin + 355.0
+		colTotal = margin + 440.0
+		descMaxLen = 45
+	}
 
 	// Table header background
 	fmt.Fprintf(&content, "%.3f %.3f %.3f rg\n", primaryR, primaryG, primaryB)
 	fmt.Fprintf(&content, "%.2f %.2f %.2f %.2f re f\n", margin-10, tableTop-5, pageWidth-2*margin+20, 25.0)
 
 	// Table header text in white
-	writeTextColored(&content, "Date", colDate, tableTop+3, 10.0, 1, 1, 1)
+	if hasAnyDate {
+		writeTextColored(&content, "Date", colDate, tableTop+3, 10.0, 1, 1, 1)
+	}
 	writeTextColored(&content, "Description", colDesc, tableTop+3, 10.0, 1, 1, 1)
 	writeTextColored(&content, "Qté", colQty, tableTop+3, 10.0, 1, 1, 1)
 	writeTextColored(&content, "Prix unit.", colPrice, tableTop+3, 10.0, 1, 1, 1)
@@ -514,15 +538,15 @@ func generatePageContent(req *InvoiceRequest, lineTotal, taxTotal, grandTotal, v
 			fmt.Fprintf(&content, "%.2f %.2f %.2f %.2f re f\n", margin-10, y-5, pageWidth-2*margin+20, rowHeight)
 		}
 
-		// Date column (optional)
-		if line.Date != "" {
+		// Date column (only if any line has a date)
+		if hasAnyDate && line.Date != "" {
 			writeTextColored(&content, line.Date, colDate, y+3, 9.0, 0.2, 0.2, 0.2)
 		}
 
 		// Truncate description if too long
 		desc := line.Description
-		if len(desc) > 35 {
-			desc = desc[:32] + "..."
+		if len(desc) > descMaxLen {
+			desc = desc[:descMaxLen-3] + "..."
 		}
 
 		writeTextColored(&content, desc, colDesc, y+3, 10.0, 0.2, 0.2, 0.2)
