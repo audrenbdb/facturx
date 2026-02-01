@@ -719,9 +719,13 @@ func encodeWinAnsi(s string) string {
 		case 'ç':
 			result.WriteString("\\347")
 		case 'œ':
-			result.WriteString("oe") // No direct mapping in WinAnsi
+			result.WriteString("\\234")
+		case 'Œ':
+			result.WriteString("\\214")
 		case 'æ':
 			result.WriteString("\\346")
+		case 'Æ':
+			result.WriteString("\\306")
 		case '€':
 			result.WriteString("\\200")
 		case '°':
@@ -736,16 +740,26 @@ func encodeWinAnsi(s string) string {
 			result.WriteString("\\310")
 		case 'Ê':
 			result.WriteString("\\312")
+		case 'Ë':
+			result.WriteString("\\313")
 		case 'À':
 			result.WriteString("\\300")
+		case 'Â':
+			result.WriteString("\\302")
+		case 'Ä':
+			result.WriteString("\\304")
 		case 'Ç':
 			result.WriteString("\\307")
 		case 'Ô':
 			result.WriteString("\\324")
+		case 'Ö':
+			result.WriteString("\\326")
 		case 'Ù':
 			result.WriteString("\\331")
 		case 'Û':
 			result.WriteString("\\333")
+		case 'Ü':
+			result.WriteString("\\334")
 		case 'Î':
 			result.WriteString("\\316")
 		case 'Ï':
