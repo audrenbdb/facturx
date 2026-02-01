@@ -451,7 +451,7 @@ func generatePageContent(req *InvoiceRequest, lineTotal, taxTotal, grandTotal, v
 	fmt.Fprintf(&content, "%.3f %.3f %.3f rg\n", lightBgR, lightBgG, lightBgB)
 	fmt.Fprintf(&content, "%.2f %.2f %.2f %.2f re f\n", margin-10, yParties-70-float64(sellerExtraLines)*11, blockWidth+20, blockHeight)
 
-	writeTextColored(&content, "Emetteur", margin, yParties, 11.0, primaryR, primaryG, primaryB)
+	writeTextColored(&content, "Émetteur", margin, yParties, 11.0, primaryR, primaryG, primaryB)
 	sellerName := req.Seller.Name
 	if req.AddEISuffix {
 		sellerName = req.Seller.Name + ", EI"
