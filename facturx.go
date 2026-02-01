@@ -285,13 +285,19 @@ func validateContact(c *Contact, prefix string, requireSiret bool) error {
 }
 
 // validateSiretLuhn validates a 14-digit SIRET using the Luhn algorithm.
+// Handles the La Poste exception (SIREN 356000000) which uses a simple sum % 5 rule.
 // Assumes the input has already been validated as 14 numeric digits.
 func validateSiretLuhn(siret string) bool {
 	sum := 0
+	simpleSum := 0 // Used for La Poste exception
+
 	for i := 0; i < 14; i++ {
 		digit := int(siret[i] - '0')
-		// Double every second digit (0-indexed: positions 1, 3, 5, 7, 9, 11, 13)
-		if i%2 == 1 {
+		simpleSum += digit
+
+		// Luhn algorithm: double every second digit from the right.
+		// For a 14-digit number, this means positions 0, 2, 4, 6, 8, 10, 12 (0-indexed from left).
+		if i%2 == 0 {
 			digit *= 2
 			if digit > 9 {
 				digit -= 9
@@ -299,7 +305,18 @@ func validateSiretLuhn(siret string) bool {
 		}
 		sum += digit
 	}
-	return sum%10 == 0
+
+	// Standard Luhn check
+	if sum%10 == 0 {
+		return true
+	}
+
+	// La Poste exception (SIREN 356000000): simple sum must be divisible by 5
+	if siret[:9] == "356000000" {
+		return simpleSum%5 == 0
+	}
+
+	return false
 }
 
 func parseInt(s string) int {

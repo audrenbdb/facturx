@@ -16,7 +16,7 @@ func sampleRequest() InvoiceRequest {
 			ZipCode:     "75001",
 			City:        "Paris",
 			CountryCode: "FR",
-			Siret:       "12345678900006", // Valid Luhn checksum
+			Siret:       "52825000400033", // Valid Luhn checksum
 			VatNumber:   "FR12345678901",
 		},
 		Buyer: Contact{
@@ -25,7 +25,7 @@ func sampleRequest() InvoiceRequest {
 			ZipCode:     "69001",
 			City:        "Lyon",
 			CountryCode: "FR",
-			Siret:       "98765432100006", // Valid Luhn checksum
+			Siret:       "35600000000048", // Valid Luhn checksum (La Poste)
 			VatNumber:   "FR98765432109",
 		},
 		Lines: []InvoiceLine{
@@ -113,11 +113,13 @@ func TestSiretLuhnValidation(t *testing.T) {
 		siret string
 		valid bool
 	}{
-		{"12345678900006", true},  // Valid checksum
-		{"98765432100006", true},  // Valid checksum
+		{"52825000400033", true},  // Real SIRET
+		{"35600000000048", true},  // La Poste (passes Luhn)
+		{"35600000000010", true},  // La Poste exception (fails Luhn, passes simple sum % 5)
 		{"00000000000000", true},  // All zeros is valid
 		{"12345678901234", false}, // Invalid checksum
 		{"11111111111111", false}, // Invalid checksum
+		{"35600000000011", false}, // La Poste but fails both Luhn and simple sum % 5
 	}
 
 	for _, tt := range tests {
