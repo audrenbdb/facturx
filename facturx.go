@@ -86,6 +86,14 @@ func VatExemptHealth() VatRegime {
 	}
 }
 
+// ProfessionalId represents a professional identifier (ADELI, RPPS, etc.).
+type ProfessionalId struct {
+	// Type of identifier (e.g., "ADELI", "RPPS").
+	Type string
+	// Value is the identifier value.
+	Value string
+}
+
 // Contact represents contact information for seller or buyer.
 type Contact struct {
 	// Name is the full name (company or individual).
@@ -102,6 +110,42 @@ type Contact struct {
 	Siret string
 	// VatNumber is the VAT number (e.g., "FR12345678901"). Optional for exempt regimes.
 	VatNumber string
+	// ProfessionalIds contains professional identifiers (ADELI, RPPS, etc.).
+	ProfessionalIds []ProfessionalId
+}
+
+// PaymentMethod represents the payment method for a paid invoice.
+type PaymentMethod string
+
+const (
+	PaymentCash     PaymentMethod = "cash"
+	PaymentCheck    PaymentMethod = "check"
+	PaymentCard     PaymentMethod = "card"
+	PaymentTransfer PaymentMethod = "transfer"
+)
+
+// PaymentMethodLabel returns the French label for the payment method.
+func (m PaymentMethod) Label() string {
+	switch m {
+	case PaymentCash:
+		return "espèces"
+	case PaymentCheck:
+		return "chèque"
+	case PaymentCard:
+		return "carte bancaire"
+	case PaymentTransfer:
+		return "virement"
+	default:
+		return string(m)
+	}
+}
+
+// Payment contains payment information for paid invoices.
+type Payment struct {
+	// Date is the payment date in DD/MM/YYYY format.
+	Date string
+	// Method is the payment method.
+	Method PaymentMethod
 }
 
 // InvoiceLine represents a single invoice line item.
@@ -112,6 +156,8 @@ type InvoiceLine struct {
 	Quantity float64
 	// UnitPrice in EUR (excluding tax).
 	UnitPrice float64
+	// Date is the service/delivery date in DD/MM/YYYY format (optional).
+	Date string
 }
 
 // InvoiceRequest contains all data needed to generate an invoice.
@@ -132,6 +178,8 @@ type InvoiceRequest struct {
 	AddEISuffix bool
 	// CustomMentions is free text for legal mentions (can contain newlines).
 	CustomMentions string
+	// Payment contains payment info. If set, displays "Payée le [date] par [method]".
+	Payment *Payment
 }
 
 // ValidationError represents a validation error.
@@ -187,15 +235,15 @@ func validate(req *InvoiceRequest) error {
 	if strings.TrimSpace(req.Seller.Name) == "" {
 		return ValidationError{Field: "Seller.Name", Message: "seller name cannot be empty"}
 	}
-	if err := validateContact(&req.Seller, "Seller"); err != nil {
+	if err := validateContact(&req.Seller, "Seller", true); err != nil {
 		return err
 	}
 
-	// Buyer
+	// Buyer (SIRET optional for B2C)
 	if strings.TrimSpace(req.Buyer.Name) == "" {
 		return ValidationError{Field: "Buyer.Name", Message: "buyer name cannot be empty"}
 	}
-	if err := validateContact(&req.Buyer, "Buyer"); err != nil {
+	if err := validateContact(&req.Buyer, "Buyer", false); err != nil {
 		return err
 	}
 
@@ -207,18 +255,20 @@ func validate(req *InvoiceRequest) error {
 	return nil
 }
 
-func validateContact(c *Contact, prefix string) error {
-	// SIRET: 14 digits
-	if len(c.Siret) != 14 {
-		return ValidationError{Field: prefix + ".Siret", Message: "SIRET must be 14 digits"}
-	}
-	for _, ch := range c.Siret {
-		if !unicode.IsDigit(ch) {
-			return ValidationError{Field: prefix + ".Siret", Message: "SIRET must contain only digits"}
+func validateContact(c *Contact, prefix string, requireSiret bool) error {
+	// SIRET: 14 digits (optional for buyer in B2C)
+	if c.Siret != "" || requireSiret {
+		if len(c.Siret) != 14 {
+			return ValidationError{Field: prefix + ".Siret", Message: "SIRET must be 14 digits"}
 		}
-	}
-	if !validateSiretLuhn(c.Siret) {
-		return ValidationError{Field: prefix + ".Siret", Message: "SIRET checksum invalid (Luhn)"}
+		for _, ch := range c.Siret {
+			if !unicode.IsDigit(ch) {
+				return ValidationError{Field: prefix + ".Siret", Message: "SIRET must contain only digits"}
+			}
+		}
+		if !validateSiretLuhn(c.Siret) {
+			return ValidationError{Field: prefix + ".Siret", Message: "SIRET checksum invalid (Luhn)"}
+		}
 	}
 
 	// Country code: 2 letters

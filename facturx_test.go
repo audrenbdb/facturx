@@ -282,6 +282,92 @@ func TestFontMetrics(t *testing.T) {
 	}
 }
 
+func TestProfessionalIds(t *testing.T) {
+	req := sampleRequest()
+	req.Seller.ProfessionalIds = []ProfessionalId{
+		{Type: "ADELI", Value: "123456789"},
+		{Type: "RPPS", Value: "12345678901"},
+	}
+	pdf, err := Generate(req)
+	if err != nil {
+		t.Fatalf("Generation failed: %v", err)
+	}
+	if len(pdf) < 1000 {
+		t.Error("PDF too small")
+	}
+}
+
+func TestPaymentInfo(t *testing.T) {
+	req := sampleRequest()
+	req.Payment = &Payment{
+		Date:   "15/01/2024",
+		Method: PaymentCard,
+	}
+	pdf, err := Generate(req)
+	if err != nil {
+		t.Fatalf("Generation failed: %v", err)
+	}
+	if len(pdf) < 1000 {
+		t.Error("PDF too small")
+	}
+}
+
+func TestPaymentMethodLabels(t *testing.T) {
+	tests := []struct {
+		method PaymentMethod
+		label  string
+	}{
+		{PaymentCash, "espèces"},
+		{PaymentCheck, "chèque"},
+		{PaymentCard, "carte bancaire"},
+		{PaymentTransfer, "virement"},
+	}
+	for _, tt := range tests {
+		if got := tt.method.Label(); got != tt.label {
+			t.Errorf("PaymentMethod(%s).Label() = %q, want %q", tt.method, got, tt.label)
+		}
+	}
+}
+
+func TestLineDates(t *testing.T) {
+	req := sampleRequest()
+	req.Lines = []InvoiceLine{
+		{Description: "Service 1", Quantity: 1, UnitPrice: 100, Date: "10/01/2024"},
+		{Description: "Service 2", Quantity: 1, UnitPrice: 200, Date: "11/01/2024"},
+	}
+	pdf, err := Generate(req)
+	if err != nil {
+		t.Fatalf("Generation failed: %v", err)
+	}
+	if len(pdf) < 1000 {
+		t.Error("PDF too small")
+	}
+}
+
+func TestB2CWithoutBuyerSiret(t *testing.T) {
+	req := sampleRequest()
+	req.Buyer.Siret = "" // No SIRET for B2C customer
+	pdf, err := Generate(req)
+	if err != nil {
+		t.Fatalf("Generation failed: %v", err)
+	}
+	if len(pdf) < 1000 {
+		t.Error("PDF too small")
+	}
+}
+
+func TestHealthExemptionVat(t *testing.T) {
+	req := sampleRequest()
+	req.Regime = VatExemptHealth()
+	pdf, err := Generate(req)
+	if err != nil {
+		t.Fatalf("Generation failed: %v", err)
+	}
+	if len(pdf) < 1000 {
+		t.Error("PDF too small")
+	}
+}
+
 func BenchmarkGenerate(b *testing.B) {
 	req := sampleRequest()
 	for i := 0; i < b.N; i++ {

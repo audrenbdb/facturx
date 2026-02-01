@@ -382,12 +382,12 @@ func generatePageContent(req *InvoiceRequest, lineTotal, taxTotal, grandTotal, v
 
 	var content bytes.Buffer
 
-	// Color definitions (RGB 0-1)
+	// Color definitions (RGB 0-1) - Deiz theme
 	const (
-		primaryR, primaryG, primaryB = 0.173, 0.243, 0.314 // Dark blue-gray #2C3E50
-		accentR, accentG, accentB    = 0.204, 0.596, 0.859 // Blue accent #3498DB
-		grayR, grayG, grayB          = 0.584, 0.647, 0.651 // Gray text #95A5A6
-		lightBgR, lightBgG, lightBgB = 0.925, 0.941, 0.945 // Light gray bg #ECF0F1
+		primaryR, primaryG, primaryB = 0.176, 0.353, 0.290 // Dark teal #2D5A4A
+		accentR, accentG, accentB    = 0.878, 0.482, 0.353 // Coral #E07B5A
+		grayR, grayG, grayB          = 0.467, 0.467, 0.420 // Warm gray #776B6B
+		lightBgR, lightBgG, lightBgB = 0.976, 0.965, 0.945 // Cream #F9F6F1
 	)
 
 	// Start with graphics state
@@ -397,29 +397,37 @@ func generatePageContent(req *InvoiceRequest, lineTotal, taxTotal, grandTotal, v
 	// Header band with accent color
 	// ========================================================================
 	headerHeight := 70.0
+	headerCenterY := pageHeight - headerHeight/2
 	fmt.Fprintf(&content, "%.3f %.3f %.3f rg\n", primaryR, primaryG, primaryB)
 	fmt.Fprintf(&content, "0 %.2f %.2f %.2f re f\n", pageHeight-headerHeight, pageWidth, headerHeight)
 
-	// Title in white
-	writeTextColored(&content, "FACTURE", margin, pageHeight-45, 28.0, 1, 1, 1)
+	// Title + number block (centered vertically as a group)
+	titleFontSize := 28.0
+	numberFontSize := 11.0
+	titleNumberGap := 5.0
+	headerBlockHeight := titleFontSize + titleNumberGap + numberFontSize
+	blockTopY := headerCenterY + headerBlockHeight/2
 
-	// Invoice number in white (smaller, right-aligned concept)
+	writeTextColored(&content, "FACTURE", margin, blockTopY-titleFontSize+6, titleFontSize, 1, 1, 1)
 	invoiceInfo := fmt.Sprintf("N° %s", req.Number)
-	writeTextColored(&content, invoiceInfo, margin, pageHeight-62, 11.0, 0.8, 0.8, 0.8)
+	writeTextColored(&content, invoiceInfo, margin, blockTopY-titleFontSize-titleNumberGap-2, numberFontSize, 0.8, 0.8, 0.8)
 
 	// ========================================================================
-	// Date badge
+	// Date badge (centered vertically)
 	// ========================================================================
 	dateStr := fmt.Sprintf("%s/%s/%s", req.Date[6:8], req.Date[4:6], req.Date[0:4])
 	dateFontSize := 10.0
-	dateBoxWidth := 75.0
-	dateBoxX := pageWidth - margin - 80
+	dateBoxHeight := 24.0
+	dateBoxWidth := 80.0
+	dateBoxX := pageWidth - margin - dateBoxWidth - 5
+	dateBoxY := headerCenterY - dateBoxHeight/2
 	fmt.Fprintf(&content, "1 1 1 rg\n") // White background
-	fmt.Fprintf(&content, "%.2f %.2f %.2f 20 re f\n", dateBoxX, pageHeight-50, dateBoxWidth)
+	fmt.Fprintf(&content, "%.2f %.2f %.2f %.2f re f\n", dateBoxX, dateBoxY, dateBoxWidth, dateBoxHeight)
 	// Center text in box
 	dateTextWidth := metrics.stringWidth(dateStr, dateFontSize)
 	dateTextX := dateBoxX + (dateBoxWidth-dateTextWidth)/2
-	writeTextColored(&content, dateStr, dateTextX, pageHeight-44, dateFontSize, primaryR, primaryG, primaryB)
+	dateTextY := dateBoxY + (dateBoxHeight-dateFontSize)/2 + 1
+	writeTextColored(&content, dateStr, dateTextX, dateTextY, dateFontSize, primaryR, primaryG, primaryB)
 
 	// ========================================================================
 	// Accent line under header
@@ -435,11 +443,15 @@ func generatePageContent(req *InvoiceRequest, lineTotal, taxTotal, grandTotal, v
 	yParties := pageHeight - 110.0
 	blockWidth := (pageWidth - 2*margin - 30) / 2
 
+	// Calculate seller block height based on professional IDs
+	sellerExtraLines := len(req.Seller.ProfessionalIds)
+	blockHeight := 85.0 + float64(sellerExtraLines)*11.0
+
 	// Seller block - left with subtle background
 	fmt.Fprintf(&content, "%.3f %.3f %.3f rg\n", lightBgR, lightBgG, lightBgB)
-	fmt.Fprintf(&content, "%.2f %.2f %.2f 85 re f\n", margin-10, yParties-70, blockWidth+20)
+	fmt.Fprintf(&content, "%.2f %.2f %.2f %.2f re f\n", margin-10, yParties-70-float64(sellerExtraLines)*11, blockWidth+20, blockHeight)
 
-	writeTextColored(&content, "VENDEUR", margin, yParties, 11.0, primaryR, primaryG, primaryB)
+	writeTextColored(&content, "Emetteur", margin, yParties, 11.0, primaryR, primaryG, primaryB)
 	sellerName := req.Seller.Name
 	if req.AddEISuffix {
 		sellerName = req.Seller.Name + ", EI"
@@ -449,24 +461,34 @@ func generatePageContent(req *InvoiceRequest, lineTotal, taxTotal, grandTotal, v
 	writeTextColored(&content, fmt.Sprintf("%s %s", req.Seller.ZipCode, req.Seller.City), margin, yParties-46, 9.0, grayR, grayG, grayB)
 	writeTextColored(&content, fmt.Sprintf("SIRET: %s", req.Seller.Siret), margin, yParties-59, 9.0, grayR, grayG, grayB)
 
+	// Display professional IDs (ADELI, RPPS, etc.)
+	sellerIdY := yParties - 72.0
+	for _, profId := range req.Seller.ProfessionalIds {
+		writeTextColored(&content, fmt.Sprintf("%s: %s", profId.Type, profId.Value), margin, sellerIdY, 9.0, grayR, grayG, grayB)
+		sellerIdY -= 11.0
+	}
+
 	// Buyer block - right with subtle background
 	buyerX := pageWidth/2.0 + 15.0
 	fmt.Fprintf(&content, "%.3f %.3f %.3f rg\n", lightBgR, lightBgG, lightBgB)
-	fmt.Fprintf(&content, "%.2f %.2f %.2f 85 re f\n", buyerX-10, yParties-70, blockWidth+20)
+	fmt.Fprintf(&content, "%.2f %.2f %.2f %.2f re f\n", buyerX-10, yParties-70-float64(sellerExtraLines)*11, blockWidth+20, blockHeight)
 
-	writeTextColored(&content, "CLIENT", buyerX, yParties, 11.0, primaryR, primaryG, primaryB)
+	writeTextColored(&content, "Destinataire", buyerX, yParties, 11.0, primaryR, primaryG, primaryB)
 	writeTextColored(&content, req.Buyer.Name, buyerX, yParties-18, 10.0, 0.2, 0.2, 0.2)
 	writeTextColored(&content, req.Buyer.Address, buyerX, yParties-33, 9.0, grayR, grayG, grayB)
 	writeTextColored(&content, fmt.Sprintf("%s %s", req.Buyer.ZipCode, req.Buyer.City), buyerX, yParties-46, 9.0, grayR, grayG, grayB)
-	writeTextColored(&content, fmt.Sprintf("SIRET: %s", req.Buyer.Siret), buyerX, yParties-59, 9.0, grayR, grayG, grayB)
+	if req.Buyer.Siret != "" {
+		writeTextColored(&content, fmt.Sprintf("SIRET: %s", req.Buyer.Siret), buyerX, yParties-59, 9.0, grayR, grayG, grayB)
+	}
 
 	// ========================================================================
-	// Table
+	// Table - adjust position based on seller block height
 	// ========================================================================
-	tableTop := pageHeight - 230.0
-	colDesc := margin
-	colQty := margin + 280.0
-	colPrice := margin + 350.0
+	tableTop := pageHeight - 230.0 - float64(sellerExtraLines)*11.0
+	colDate := margin
+	colDesc := margin + 65.0
+	colQty := margin + 295.0
+	colPrice := margin + 355.0
 	colTotal := margin + 440.0
 	rowHeight := 22.0
 
@@ -475,6 +497,7 @@ func generatePageContent(req *InvoiceRequest, lineTotal, taxTotal, grandTotal, v
 	fmt.Fprintf(&content, "%.2f %.2f %.2f %.2f re f\n", margin-10, tableTop-5, pageWidth-2*margin+20, 25.0)
 
 	// Table header text in white
+	writeTextColored(&content, "Date", colDate, tableTop+3, 10.0, 1, 1, 1)
 	writeTextColored(&content, "Description", colDesc, tableTop+3, 10.0, 1, 1, 1)
 	writeTextColored(&content, "Qté", colQty, tableTop+3, 10.0, 1, 1, 1)
 	writeTextColored(&content, "Prix unit.", colPrice, tableTop+3, 10.0, 1, 1, 1)
@@ -491,10 +514,15 @@ func generatePageContent(req *InvoiceRequest, lineTotal, taxTotal, grandTotal, v
 			fmt.Fprintf(&content, "%.2f %.2f %.2f %.2f re f\n", margin-10, y-5, pageWidth-2*margin+20, rowHeight)
 		}
 
+		// Date column (optional)
+		if line.Date != "" {
+			writeTextColored(&content, line.Date, colDate, y+3, 9.0, 0.2, 0.2, 0.2)
+		}
+
 		// Truncate description if too long
 		desc := line.Description
-		if len(desc) > 45 {
-			desc = desc[:42] + "..."
+		if len(desc) > 35 {
+			desc = desc[:32] + "..."
 		}
 
 		writeTextColored(&content, desc, colDesc, y+3, 10.0, 0.2, 0.2, 0.2)
@@ -511,11 +539,12 @@ func generatePageContent(req *InvoiceRequest, lineTotal, taxTotal, grandTotal, v
 	fmt.Fprintf(&content, "%.2f %.2f m %.2f %.2f l S\n", margin-10, y+rowHeight-5, pageWidth-margin+10, y+rowHeight-5)
 
 	// ========================================================================
-	// Totals box
+	// Totals box - aligned with table right edge
 	// ========================================================================
-	totalsBoxX := colPrice - 40
+	tableRightEdge := pageWidth - margin + 10
+	totalsBoxW := 180.0
+	totalsBoxX := tableRightEdge - totalsBoxW
 	totalsBoxY := y - 85
-	totalsBoxW := pageWidth - margin - totalsBoxX + 25
 	totalsBoxH := 80.0
 
 	// Totals background
@@ -528,8 +557,8 @@ func generatePageContent(req *InvoiceRequest, lineTotal, taxTotal, grandTotal, v
 	fmt.Fprintf(&content, "%.2f %.2f %.2f %.2f re S\n", totalsBoxX, totalsBoxY, totalsBoxW, totalsBoxH)
 
 	// Totals content
-	totalsLabelX := colPrice - 20
-	totalsValueX := colTotal
+	totalsLabelX := totalsBoxX + 15
+	totalsValueX := totalsBoxX + 100
 	totalsY := totalsBoxY + totalsBoxH - 20
 
 	writeTextColored(&content, "Total HT:", totalsLabelX, totalsY, 10.0, 0.2, 0.2, 0.2)
@@ -545,6 +574,30 @@ func generatePageContent(req *InvoiceRequest, lineTotal, taxTotal, grandTotal, v
 	writeTextColored(&content, fmt.Sprintf("%s EUR", grandTotal), totalsValueX, totalsBoxY+6, 11.0, 1, 1, 1)
 
 	// ========================================================================
+	// Payment badge (if paid)
+	// ========================================================================
+	if req.Payment != nil {
+		paymentText := fmt.Sprintf("Payée le %s par %s", req.Payment.Date, req.Payment.Method.Label())
+		paymentFontSize := 11.0
+		paymentTextWidth := metrics.stringWidth(paymentText, paymentFontSize)
+		paymentBadgeW := paymentTextWidth + 24
+		paymentBadgeH := 26.0
+		paymentBadgeX := margin - 10 // Aligned with table left edge
+		paymentBadgeY := totalsBoxY + (totalsBoxH-paymentBadgeH)/2
+
+		// Border only (no fill)
+		fmt.Fprintf(&content, "%.3f %.3f %.3f RG\n", primaryR, primaryG, primaryB)
+		fmt.Fprintf(&content, "1.5 w\n")
+		fmt.Fprintf(&content, "%.2f %.2f %.2f %.2f re S\n", paymentBadgeX, paymentBadgeY, paymentBadgeW, paymentBadgeH)
+		fmt.Fprintf(&content, "1 w\n")
+
+		// Text centered
+		paymentTextX := paymentBadgeX + 12
+		paymentTextY := paymentBadgeY + (paymentBadgeH-paymentFontSize)/2 + 2
+		writeTextColored(&content, paymentText, paymentTextX, paymentTextY, paymentFontSize, primaryR, primaryG, primaryB)
+	}
+
+	// ========================================================================
 	// Legal mentions
 	// ========================================================================
 	mentionsY := 110.0
@@ -555,7 +608,7 @@ func generatePageContent(req *InvoiceRequest, lineTotal, taxTotal, grandTotal, v
 	fmt.Fprintf(&content, "%.2f %.2f m %.2f %.2f l S\n", margin, mentionsY+15, margin+40, mentionsY+15)
 	fmt.Fprintf(&content, "1 w\n")
 
-	writeTextColored(&content, "Mentions légales", margin, mentionsY, 9.0, primaryR, primaryG, primaryB)
+	writeTextColored(&content, "Mentions legales", margin, mentionsY, 9.0, primaryR, primaryG, primaryB)
 	writeTextColored(&content, vatText, margin, mentionsY-14, 8.0, grayR, grayG, grayB)
 
 	if req.CustomMentions != "" {
@@ -571,17 +624,12 @@ func generatePageContent(req *InvoiceRequest, lineTotal, taxTotal, grandTotal, v
 	// ========================================================================
 	fmt.Fprintf(&content, "%.3f %.3f %.3f rg\n", lightBgR, lightBgG, lightBgB)
 	fmt.Fprintf(&content, "0 0 %.2f 35 re f\n", pageWidth)
-	writeTextColored(&content, "Document généré conformément à la norme Factur-X 1.0 (Profil BASIC)", margin, 14, 7.0, grayR, grayG, grayB)
+	writeTextColored(&content, "Document genere conformement a la norme Factur-X 1.0 (Profil BASIC)", margin, 14, 7.0, grayR, grayG, grayB)
 
 	// End graphics state
 	content.WriteString("Q\n")
 
 	return content.Bytes()
-}
-
-// writeText writes text at position in black.
-func writeText(content *bytes.Buffer, text string, x, y, size float64) {
-	writeTextColored(content, text, x, y, size, 0, 0, 0)
 }
 
 // writeTextColored writes text at position with specified RGB color (0-1 range).
