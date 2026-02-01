@@ -734,6 +734,27 @@ func encodeWinAnsi(s string) string {
 			result.WriteString("\\262")
 		case '³':
 			result.WriteString("\\263")
+		// Typographic quotes and punctuation
+		case '\u2018': // Left single quote
+			result.WriteString("\\221")
+		case '\u2019': // Right single quote / apostrophe
+			result.WriteString("\\222")
+		case '\u201C': // Left double quote
+			result.WriteString("\\223")
+		case '\u201D': // Right double quote
+			result.WriteString("\\224")
+		case '\u2013': // En dash
+			result.WriteString("\\226")
+		case '\u2014': // Em dash
+			result.WriteString("\\227")
+		case '\u2026': // Ellipsis
+			result.WriteString("\\205")
+		case '\u2030': // Per mille
+			result.WriteString("\\211")
+		case '\u00AB': // Left guillemet «
+			result.WriteString("\\253")
+		case '\u00BB': // Right guillemet »
+			result.WriteString("\\273")
 		case 'É':
 			result.WriteString("\\311")
 		case 'È':
